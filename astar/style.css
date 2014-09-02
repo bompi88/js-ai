@@ -17,6 +17,14 @@
 	background-color: #f66;
 }
 
+.endpoint {
+	background-color: #66f;
+}
+
+.obstacle {
+	background-color: #444;
+}
+
 .board-container {
 	display: inline-block;
 	padding: 20px;
@@ -39,4 +47,8 @@
 
 .board-options {
 	margin-top: 60px;
+}
+
+.board-options > div {
+	margin-bottom: 60px;
 }
