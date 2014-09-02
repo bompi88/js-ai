@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+	<head lang="no">
+		<meta charset="utf-8">
+    	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>A* solver</title>
+
+		<link href="style.css" rel="stylesheet">
+
+		<!-- Bootstrap -->
+	    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	    <!--[if lt IE 9]>
+	    	<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+	    	<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	    <![endif]-->
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-xs-12 wrapper">
+					<h1 class="text-center">A* solver</h1>
+					<div class="board-container">
+						<div class="board">
+							<div class="square"></div>
+							<div class="square visited"></div>
+							<div class="square visiting"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+							<div class="square"></div>
+						</div>
+					</div>
+					<div>
+						<div class="col-xs-12">
+							<form role="form">
+								<div class="row">
+									<div class="col-xs-12 text-center">
+										<button type="button" class="btn btn-primary" id="run">Run! <span class="glyphicon glyphicon-play"></span></button>
+									</div>
+								</div>
+								<div class="row board-options">
+									<div class="col-xs-12 col-sm-4">
+										<legend>Board size</legend>
+										
+										<div class="form-group">
+			    							<label for="size-x-value">Size X-axis</label>
+			    							<input type="number" class="form-control" id="size-x-value" placeholder="Size X-axis">
+			    						</div>
+
+										<div class="form-group">
+			    							<label for="size-y-value">Size Y-axis</label>
+			    							<input type="number" class="form-control" id="size-y-value" placeholder="Size Y-axis">
+			    						</div>
+
+			    						<button type="button" class="btn btn-success pull-right" id="set-size">Edit size <span class="glyphicon glyphicon-pencil"></span></button>
+			    					</div>
+									<div class="col-xs-12 col-sm-4">
+										<legend>Add an obstacle</legend>
+										
+										<div class="form-group">
+			    							<label for="obstacle-x-value">X-value</label>
+			    							<input type="number" class="form-control" id="obstacle-x-value" placeholder="X-value">
+			    						</div>
+
+										<div class="form-group">
+			    							<label for="obstacle-y-value">Y-value</label>
+			    							<input type="number" class="form-control" id="obstacle-y-value" placeholder="Y-value">
+			    						</div>
+
+			    						<button type="button" class="btn btn-success pull-right" id="add-obstacle">Add <span class="glyphicon glyphicon-plus"></span></button>
+			    					</div>
+			    					<div class="col-xs-12 col-sm-4">
+										<legend>General options</legend>
+										
+										<div class="checkbox">
+											<label>
+												<input type="checkbox"> Diagonal paths
+											</label>
+										</div>
+			    					</div>
+		    					</div>
+							</form>
+						</div>
+					</div>
+				</div>	
+			</div>
+		</div>
+	</body>
+</html>

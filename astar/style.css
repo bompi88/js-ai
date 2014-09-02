@@ -1,0 +1,42 @@
+.square {
+	width: 21px;
+	height: 21px;
+	display: block;
+	overflow: hidden;
+	float: left;
+	background-color: #fff;
+	border: 1px #555 solid;
+	margin: -1px -1px 0 0;
+}
+
+.visited {
+	background-color: #ccc;
+}
+
+.visiting {
+	background-color: #f66;
+}
+
+.board-container {
+	display: inline-block;
+	padding: 20px;
+	margin: 60px auto;
+	background-color: #eee;
+	height: 100%!important;
+}
+
+.board {
+	width: 200px;
+}
+
+.wrapper {
+	text-align: center;
+}
+
+.wrapper form {
+	text-align: left;
+}
+
+.board-options {
+	margin-top: 60px;
+}
