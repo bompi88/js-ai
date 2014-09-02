@@ -4,12 +4,13 @@
 		<meta charset="utf-8">
     	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>A* solver</title>
+		<title>A* 2D-grid solver</title>
 
 		<link href="style.css" rel="stylesheet">
 
-		<!-- Bootstrap -->
-	    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<!-- Vendors -->
+	    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	    <link href="vendor/pnotify/pnotify.custom.min.css" rel="stylesheet">
 
 	    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -22,43 +23,11 @@
 		<div class="container">
 			<div class="row">
 				<div class="col-xs-12 wrapper">
-					<h1 class="text-center">A* solver</h1>
+					<h1 class="text-center">A* 2D-grid solver</h1>
 					<div class="board-container">
 						<div class="board">
-							<div class="square"></div>
-							<div class="square visited"></div>
-							<div class="square visiting"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
-							<div class="square"></div>
+							<!-- Board is generated here -->
+							<h3>Vennligst vent...</h3>
 						</div>
 					</div>
 					<div>
@@ -87,15 +56,30 @@
 			    					</div>
 									<div class="col-xs-12 col-sm-4">
 										<legend>Add an obstacle</legend>
+										<p><em>This creates a rectangle which covers the area between the two points specified. Index is zero-based.</em></p>
+										
+										<h4>From</h4>
 										
 										<div class="form-group">
-			    							<label for="obstacle-x-value">X-value</label>
-			    							<input type="number" class="form-control" id="obstacle-x-value" placeholder="X-value">
+			    							<label for="obstacle-x-from">X-value</label>
+			    							<input type="number" class="form-control" id="obstacle-x-from" placeholder="X-value">
 			    						</div>
 
 										<div class="form-group">
-			    							<label for="obstacle-y-value">Y-value</label>
-			    							<input type="number" class="form-control" id="obstacle-y-value" placeholder="Y-value">
+			    							<label for="obstacle-y-from">Y-value</label>
+			    							<input type="number" class="form-control" id="obstacle-y-from" placeholder="Y-value">
+			    						</div>
+
+										<h4>To</h4>
+										
+										<div class="form-group">
+			    							<label for="obstacle-x-to">X-value</label>
+			    							<input type="number" class="form-control" id="obstacle-x-to" placeholder="X-value">
+			    						</div>
+
+										<div class="form-group">
+			    							<label for="obstacle-y-to">Y-value</label>
+			    							<input type="number" class="form-control" id="obstacle-y-to" placeholder="Y-value">
 			    						</div>
 
 			    						<button type="button" class="btn btn-success pull-right" id="add-obstacle">Add <span class="glyphicon glyphicon-plus"></span></button>
@@ -116,5 +100,15 @@
 				</div>	
 			</div>
 		</div>
+
+		<!-- Vendor scripts -->
+		<script src="vendor/jquery/jquery-1.11.1.min.js"></script>
+		<script src="vendor/underscore/underscore.js"></script>
+		<script src="vendor/backbone/backbone.js"></script>
+		<script src="vendor/pnotify/pnotify.custom.min.js"></script>
+
+		<!-- Scripts -->
+		<script src="gui.js"></script>
+
 	</body>
 </html>
