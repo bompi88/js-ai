@@ -1,4 +1,4 @@
-A-star solver
+A-star 2D grid solver
 =====
 
-A-star solver with basic GUI-interface.
+A-star 2d grid solver with basic GUI-interface.
