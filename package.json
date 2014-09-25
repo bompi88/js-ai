@@ -1,8 +1,8 @@
 {
-	"name": "A* 2D-grid solver",
+	"name": "astar",
 	"main": "index.html",
 	"window": {
-		"toolbar": false,
+		"toolbar": true,
 		"width": 1024,
 		"height": 800
 	}

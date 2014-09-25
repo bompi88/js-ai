@@ -1,0 +1,11 @@
+.wrapper {
+	text-align: center;
+}
+
+.wrapper div.col-xs-12 {
+	margin: 25px 0;
+}
+
+#diagram {
+	border: 10px solid #ddd;
+}

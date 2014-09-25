@@ -1,10 +1,16 @@
+var process = require('child_process');
+var child;
+
 var newObstacleButton, runButton, setSizeButton;
 
 var status = 'idle';
 
 var board;
+var mapSize = { x: 10, y: 10};
 
 var options;
+
+var state = null;
 
 // -- Helper functions ---------------------------------------------------------
 
@@ -104,11 +110,39 @@ handleObstacleButton = function() {
 /**
  * Is triggered whenever the 'Run'-button is clicked.
  */
-handleRunButton = function() {
+handleRunButton = function(event) {
+	event.preventDefault();
+
 	new PNotify({
 	    title: 'Let\'s begin the diggin\'',
 	    text: 'The solver has started, you may take a coffee break or two.',
 	    type: 'info'
+	});
+
+	resetGrid();
+
+	child = process.fork('astar/astar.js');
+	
+	child.on('message', function(m) {
+
+		// Do DOM manipulations based on feedback from child process
+	  	if(m.msg === 'visiting') {
+	  		$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('visiting');
+	  	} else if(m.msg === 'bailing') {
+			$('#' + m.node.content[0] + '-' + m.node.content[1]).removeClass('visiting');
+	  	} else if(m.msg === 'expanding') {
+	  		$('#' + m.node[0] + '-' + m.node[1]).addClass('expanded');
+	  	} else if(m.msg === 'visited') {
+	  		$('#' + m.node.content[0] + '-' + m.node.content[1]).removeClass('visiting');
+			$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('visited');
+	  	} else if(m.msg === 'path') {
+	  		$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('path');
+	  	}
+	});
+
+	child.send({
+		msg: 'start',
+		options: options
 	});
 };
 
@@ -133,10 +167,12 @@ handleSetSizeButton = function() {
 				});
 			} else {
 				// Update the size in the options
-				options.obstacles.size = size;
-
+				options.size = [size.x, size.y];
+				options.start = null;
+				options.end = null;
+				options.neighbors = [];
 				// Update the UI grid
-
+				resetGrid();
 
 				// Notify that the size was adjusted
 				new PNotify({
@@ -156,12 +192,39 @@ onload = function() {
 	// Get all buttons
 	newObstacleButton = document.getElementById('add-obstacle');
 	runButton = document.getElementById('run');
+	resetButton = document.getElementById('reset');
 	setSizeButton = document.getElementById('set-size');
+
+	setStartButton = document.getElementById('set-start');
+	setEndButton = document.getElementById('set-end');
+	drawObstaclesButton = document.getElementById('draw-obstacles');
 
 	// attach listeners to each button
 	newObstacleButton.addEventListener('click', handleObstacleButton);
 	runButton.addEventListener('click', handleRunButton);
+	reset.addEventListener('click', resetGrid);
 	setSizeButton.addEventListener('click', handleSetSizeButton);
+
+	setStartButton.addEventListener('click', function(event) {
+		event.preventDefault();
+		state = 'setStart';
+	});
+
+	setEndButton.addEventListener('click', function(event) {
+		event.preventDefault();
+		state = 'setEnd';
+	});
+
+	drawObstaclesButton.addEventListener('click', function(event) {
+		event.preventDefault();
+		if(state == null) {
+			state = 'drawObstacles';
+			$(this).addClass('active');
+		} else {
+			state = null;
+			$(this).removeClass('active');
+		}
+	});
 
 	// create default options
 	createInitialOptions();
@@ -179,35 +242,76 @@ resetGrid = function() {
 
 	// empty the current board
 	board[0].innerHTML = '';
+	document.getElementById('result-time').innerHTML = '';
 
 	// Set CSS width of the board
-	board.css({ 'width': 20 * size.x });
+	board.css({ 'width': 20 * size[0] });
 
 	// append all cells in the grid
-	for(var i = 0; i < size.x; i++) {
-		for(var j = 0; j < size.y; j++) {
-			board[0].innerHTML += '<div class="square" id="' + i + '-' + j +'""></div>';
+	for(var i = 0; i < size[0]; i++) {
+		for(var j = 0; j < size[1]; j++) {
+			board[0].innerHTML += '<div class="square" id="' + i + '-' + j +'"></div>';
 		}
 	}
 
 	// color start and end node
-	var startPos = options.startPos;
-	var endPos = options.endPos;
+	var start = options.start;
+	var end = options.end;
 
-	var startCell = $('#' + startPos.x + '-' + startPos.y);
-	var endCell = $('#' + endPos.x + '-' + endPos.y);
+	if(!start || !end) {
+		return;
+	}
 
-	startCell.toggleClass('endpoint');
-	endCell.toggleClass('endpoint');
+	if(start || end) {
+		var startCell = $('#' + start[0] + '-' + start[1]);
+		var endCell = $('#' + end[0] + '-' + end[1]);
+
+		startCell.toggleClass('startpoint');
+		endCell.toggleClass('endpoint');		
+	}
 
 	// Color the cells which is occupied by an obstacle.
 	var obstacles = options.obstacles;
 
-	for(var k = 0; k < obstacles.length; k++) {
-		var cell = $('#' + obstacles[k].x + '-' + obstacles[k].y);
-		cell.toggleClass('obstacle');
+	if(obstacles.length) {
+		for(var k = 0; k < obstacles.length; k++) {
+			var cell = $('#' + obstacles[k][0] + '-' + obstacles[k][1]);
+			cell.toggleClass('obstacle');
+		}
 	}
 
+
+	// set click listeners on each cell.
+	$('div.square').on('click', function() {
+		var el = $(this);
+		var xy = el.attr('id').split('-');
+		var point = [xy[0], xy[1]];
+		console.log("clickedyclick")
+		
+		if(state === 'setStart') {
+			$('.startpoint').removeClass('startpoint');
+			el.addClass('startpoint');
+			state = null;
+			options.start = point;
+		} else if(state === 'setEnd') {
+			$('.endpoint').removeClass('endpoint');
+			el.addClass('endpoint');
+			state = null;
+			options.end = point;
+		} else if(state === 'drawObstacles') {
+			if(el.hasClass('obstacle')) {
+				for(var i = options.obstacles.length - 1; i >= 0; i--) {
+				    if(parseInt(options.obstacles[i][0],10) === parseInt(point[0],10) && parseInt(options.obstacles[i][1],10) === parseInt(point[1],10)) {
+				       options.obstacles.splice(i, 1);
+				    }
+				}
+				el.removeClass('obstacle');
+			} else {
+				el.addClass('obstacle');
+				options.obstacles.push(point);
+			}
+		}
+	});
 }
 
 // -- Validators ---------------------------------------------------------------
@@ -316,32 +420,14 @@ validateSize = function(size, cb) {
  */
 createInitialOptions = function() {
 	options = {
-		size: {
-			x: 20,
-			y: 20
-		},
-		startPos: {
-			x: 0,
-			y: 0
-		},
-		endPos: {
-			x: 19,
-			y: 15
-		},
+		size: [20, 20],
+		start: [0, 0],
+		end: [12, 15],
 		diagonal: false,
 		obstacles: [
-			{
-				x: 8,
-				y: 6
-			},
-			{
-				x: 9,
-				y: 6
-			},
-			{
-				x: 10,
-				y: 6
-			}
+			[8, 6],
+			[9, 7],
+			[10, 6]
 		]
 	};
 };
