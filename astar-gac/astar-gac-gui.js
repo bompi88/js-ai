@@ -12,26 +12,17 @@ var pointXMin, pointXMax, pointYMin, pointYMax;
 // -- Example data -------------------------------------------------------------
 
 var options = {
-	// The function that creates the queue, this can be different for each problem
-	init: function(data) {
-		var queue = new Queue();
-
-		for(var i = 0; i < data.vertices.length; i++) {
-			for(var j = 0; j < data.edges.length; j++) {
-				if(data.vertices[i].index == data.edges[j].from || data.vertices[i].index == data.edges[j].to) {
-					var n = {};
-					n[data.vertices[i].index] = j; 
-					queue.enqueue(n);
-				}
-			}
+	K: 4,
+	//creates domain for a given variable
+	domainOf: function(variable) {
+		var domain = [];
+		for (var i = 0; i < options.K; i++) {
+			domain.push(i);
 		}
-		return queue;
+		return domain;
 	},
-	data: {
-		k: 4, // default K
-		vertices: [],
-		edges: []
-	}
+	variables: [],
+	constraints: []
 };
 
 // -- On document load ---------------------------------------------------------
@@ -107,26 +98,28 @@ onload = function() {
 			dx = - (pointXMin * scaleX) + 200;
 			dy = - (pointYMin * scaleY) + 80;
 
-			var data = options.data;
+			var variables = options.variables;
+			var constraints = options.constraints;
+
 			processing.background(245);
 			
 
 			// Draw the edges
-			for(var j = 0; j < data.edges.length; j++) {
-				var from = data.edges[j].from;
-				var to = data.edges[j].to;
+			for(var j = 0; j < constraints.length; j++) {
+				var from = constraints[j].from;
+				var to = constraints[j].to;
 
-				if(data.vertices[from] && data.vertices[to]) {
-					processing.line((data.vertices[from].x * scaleX) + dx, (data.vertices[from].y * scaleY) + dy, (data.vertices[to].x * scaleX) + dx, (data.vertices[to].y * scaleY) + dy);
+				if(variables[from] && variables[to]) {
+					processing.line((variables[from].x * scaleX) + dx, (variables[from].y * scaleY) + dy, (variables[to].x * scaleX) + dx, (variables[to].y * scaleY) + dy);
 				}
 			}
 
 			// Draw the vertices
-			for(var i = 0; i < data.vertices.length; i++) {
-				processing.fill(data.vertices[i].color && data.vertices[i].color.r || 200,
-								data.vertices[i].color && data.vertices[i].color.g || 200,
-								data.vertices[i].color && data.vertices[i].color.b || 200);
-				processing.ellipse(dx + (data.vertices[i].x * scaleX), dy + (data.vertices[i].y * scaleY), 12, 12);
+			for(var i = 0; i < variables.length; i++) {
+				processing.fill(variables[i].color && variables[i].color.r || 200,
+								variables[i].color && variables[i].color.g || 200,
+								variables[i].color && variables[i].color.b || 200);
+				processing.ellipse(dx + (variables[i].x * scaleX), dy + (variables[i].y * scaleY), 12, 12);
 			}
 
 		};
@@ -149,8 +142,8 @@ parseGACInput = function(buffer) {
 	var ne = parseInt(header[1], 10);
 	
 	// reset the dataset
-	options.data.vertices = [];
-	options.data.edges = [];
+	options.variables = [];
+	options.constraints = [];
 
 	pointXMin = Infinity;
 	pointXMax = -Infinity;
@@ -167,17 +160,17 @@ parseGACInput = function(buffer) {
 
 		updateBoundary(vert.x, vert.y);
 
-		options.data.vertices.push(vert);
+		options.variables.push(vert);
 	}
 
-	for(var j = nv; j < (nv + ne + 1); j++) {
+	for(var j = nv + 1; j < (nv + ne + 1); j++) {
 		var args = lines[j].split(' ');
 		var edge = {};
 
 		edge.from = parseInt(args[0], 10);
 		edge.to = parseInt(args[1], 10);
 
-		options.data.edges.push(edge);
+		options.constraints.push(edge);
 	}
 };
 

@@ -12,6 +12,14 @@ var sleep = require('sleep');
 
 var _ = require('underscore');
 
+var options;
+
+var expanded = {
+	astar: 0,
+	dfs: 0,
+	bfs: 0
+};
+
 /**
  * Implementation of the Astar algorithm.
  *
@@ -34,7 +42,7 @@ var _ = require('underscore');
  * -----------------------------------------------------------------------------
  */
 bestFirstSearch = function(options, cb) {
-	console.log(options)
+
 	// -- Used variables -------------------------------------------------------
 
 	var open, closed, successorList;
@@ -47,46 +55,100 @@ bestFirstSearch = function(options, cb) {
 
 	// Check if start node exists
 	if(!(options.startNode)) {
-		cb(true, { error: "Start node is not defined." });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "Start node is not defined."
+			}
+		});
 		return;
 	}
 
 	if(!options.isEnd) {
-		cb(true, { error: "It's no functions isEnd which validates if the current state is an acceptable solution. Form: function(node){}" });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "It's no functions isEnd which validates if the current state is an acceptable solution. Form: function(node){}"
+			}
+		});
 		return;
 	} else {
 		if(!_.isFunction(options.isEnd)) {
-			cb(true, { error: "options.isEnd is not a function at its accepted form: function(node){}" });
+			process.send({
+				msg: 'callback',
+				cb: {
+					error: true,
+					msg: "options.isEnd is not a function at its accepted form: function(node){}"
+				}
+			});
 			return;
 		}
 	}
 
 	if(!options.h) {
-		cb(true, { error: "The heuristics function is not present in the options. Form: function(node){}" });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "The heuristics function is not present in the options. Form: function(node){}" 
+			}
+		});
 		return;
 	} else {
 		if(!_.isFunction(options.h)) {
-			cb(true, { error: "options.h is not a function at its accepted form: function(node){}" });
+			process.send({
+				msg: 'callback',
+				cb: {
+					error: true,
+					msg: "options.h is not a function at its accepted form: function(node){}"
+				}
+			});
 			return;
 		}
 	}
 
 	if(!options.d) {
-		cb(true, { error: "The distance calculating function is not present in the options. Form: function(a, b){}" });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "The distance calculating function is not present in the options. Form: function(a, b){}"
+			}
+		});
 		return;
 	} else {
 		if(!_.isFunction(options.d)) {
-			cb(true, { error: "options.d is not a function at its accepted form: function(a, b){}" });
+			process.send({
+				msg: 'callback',
+				cb: {
+					error: true,
+					msg: "options.d is not a function at its accepted form: function(a, b){}"
+				}
+			});
 			return;
 		}
 	}
 
 	if(!options.n) {
-		cb(true, { error: "The neighbor function is not present in the options. Form: function(node){}" });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "The neighbor function is not present in the options. Form: function(node){}"
+			}
+		});
 		return;
 	} else {
 		if(!_.isFunction(options.n)) {
-			cb(true, { error: "options.n is not a function at its accepted form: function(node){}" });
+			process.send({
+				msg: 'callback',
+				cb: {
+					error: true,
+					msg: "options.n is not a function at its accepted form: function(node){}"
+				}
+			});
 			return;
 		}
 	}
@@ -121,6 +183,10 @@ bestFirstSearch = function(options, cb) {
 
 	// As long as it has nodes in the open list, process the list
 	while(open.size()) {
+		
+		if(options.delay) {
+			sleep.usleep(options.delay);
+		}
 
 		// pop a node from the top of the heap
 		var currentNode = open.pop();
@@ -137,11 +203,17 @@ bestFirstSearch = function(options, cb) {
 
 		// is the current node an acceptable goal?
 		if(isEnd(currentNode.content)) {
-			cb && cb(false, {
-				error: null,
-				path: generatePath(currentNode),
-				cost: currentNode.f,
-				time: new Date() - startTime
+			process.send({
+				msg: 'callback',
+				cb: {
+					error: false,
+					data: {
+						path: generatePath(currentNode),
+						cost: currentNode.f,
+						time: new Date() - startTime,
+						expanded: expanded.astar
+					}
+				}
 			});
 
 			// Changes the cell to be visited
@@ -162,7 +234,8 @@ bestFirstSearch = function(options, cb) {
 				if(closed.contains(generateHash(successorData))) {
 					continue;
 				}
-				//console.log("expand node" + successorData)
+				// Tell about the expanding of node
+				expanded.astar++;
 				process.send({
 					msg: 'expanding',
 					node: successorData
@@ -217,10 +290,18 @@ bestFirstSearch = function(options, cb) {
 		});
 	}
 
-	cb && cb(true, {
-		error: "No solution found",
-		path: generatePath(bestNode),
-		cost: bestNode.f
+	process.send({
+		msg: 'callback',
+		cb: {
+			error: true,
+			msg: "No solution found",
+			data: {
+				path: generatePath(bestNode),
+				cost: bestNode.f,
+				time: new Date() - startTime,
+				expanded: expanded.astar
+			}
+		}
 	});
 
 	return;
@@ -245,6 +326,10 @@ if (node.parent !== undefined) {
 	});
     return pathSoFar;
   } else {
+  	process.send({
+		msg: 'path',
+		node: node
+	});
     // this is the starting node
     return [node.content];
   }
@@ -264,7 +349,13 @@ breadthFirstSearch = function(options, cb) {
 validateOptions = function(options, cb) {
 
 	if(!(options.start && options.end)) {
-		cb(true, { error: "Start point or end point is not defined." });
+		process.send({
+			msg: 'callback',
+			cb: {
+				error: true,
+				msg: "Start point or end point is not defined.",
+			}
+		});
 		return;
 	}
 };
@@ -306,48 +397,57 @@ var manhattanDist = function(a, b) {
 
 var neighbors = function(xy) {
   var x = xy[0], y = xy[1];
-  return [
-    [x - 1, y - 1],
-    [x - 1, y + 0],
-    [x - 1, y + 1],
-    [x + 0, y - 1],
 
-    [x + 0, y + 1],
-    [x + 1, y - 1],
-    [x + 1, y + 0],
-    [x + 1, y + 1],
-  ];
+  if(options.diagonal) {
+	  return [
+	    [x - 1, y - 1],
+	    [x - 1, y + 0],
+	    [x - 1, y + 1],
+	    [x + 0, y - 1],
+
+	    [x + 0, y + 1],
+	    [x + 1, y - 1],
+	    [x + 1, y + 0],
+	    [x + 1, y + 1],
+	  ];
+  } else {
+  	return [
+	    [x - 1, y + 0],
+	    [x + 0, y - 1],
+
+	    [x + 0, y + 1],
+	    [x + 1, y + 0],
+	];
+  }
 };
 
 process.on('message', function(m) {
 	if(m.msg === 'start' && m.options) {
-		var options = m.options;
+		options = m.options;
+
+		function neighborsMap(xy) {
+			return neighbors(xy).filter(function(xy) {
+				var obstacles = m.options.obstacles;
+
+				if(xy[0] >= 0 && xy[0] < obstacles[0].length && xy[1] >= 0 && xy[1] < obstacles.length) {
+					return m.options.obstacles[xy[0]][xy[1]] !== 1;
+				} else {
+					return false;
+				}
+			});
+	    }
+		
 		bestFirstSearch({
+			delay: m.options.delay,
 			startNode: options.start,
 			isEnd: function(node) {
 				return node[0] === options.end[0] && node[1] === options.end[1];
 			},
 			h: function(node) {
-				return euclideanDist(node, options.end);
+				return options.diagonal ? euclideanDist(node, options.end) : manhattanDist(node, options.end);
 			},
-			d: euclideanDist,
-			n: neighbors
-		},
-		function(error, result) {
-			if(error) {
-				new PNotify({
-				    title: 'Hmmm...',
-				    text: result.error,
-				    type: 'error'
-				});
-			} else {
-				new PNotify({
-				    title: 'Solver completed',
-				    text: 'An optimal path was found, and the solver is finished. It took: ' + result.time + ' ms.',
-				    type: 'success'
-				});		
-			}
-			document.getElementById('result-time').innerHTML = 'The search took: ' + result.time + ' ms.';
+			d: options.diagonal ? euclideanDist : manhattanDist,
+			n: m.options.map ? neighborsMap : neighbors
 		});
 	}
 });

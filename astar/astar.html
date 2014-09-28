@@ -65,7 +65,10 @@
 							<div class="row">
 								<div class="col-xs-12 text-center">
 									<div class="col-xs-12 text-center" id="result-time"></div>
+									<input style="display:none;" id="fileDialog" type="file" />
+									<button type="button" class="btn btn-default" id="open-file-btn"><span class="glyphicon glyphicon-floppy-open"></span> Open file</button>
 									<button type="button" class="btn btn-warning" id="reset">Reset <span class="glyphicon glyphicon-fast-backward"></span></button>
+									<button type="button" class="btn btn-danger" id="remove-obstacles">Remove obstacles <span class="glyphicon glyphicon-remove"></span></button>
 									<button type="button" class="btn btn-primary" id="run">Run! <span class="glyphicon glyphicon-play"></span></button>
 								</div>
 							</div>
@@ -125,7 +128,12 @@
 
 									<div class="checkbox">
 										<label>
-											<input type="checkbox"> Diagonal paths
+											<input type="checkbox" checked="1" id="diagonal-checkbox"> Diagonal paths
+										</label>
+									</div>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" checked="1" id="delay-checkbox"> Simulation delay
 										</label>
 									</div>
 								</div>

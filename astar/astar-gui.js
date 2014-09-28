@@ -1,4 +1,5 @@
 var process = require('child_process');
+var fs = require("fs");
 var child;
 
 var newObstacleButton, runButton, setSizeButton;
@@ -11,6 +12,7 @@ var mapSize = { x: 10, y: 10};
 var options;
 
 var state = null;
+var delay = false;
 
 // -- Helper functions ---------------------------------------------------------
 
@@ -46,12 +48,13 @@ pointIsPositive = function(point) {
  * Returns true if a point is defined inside the grid.
  */
 pointIsInsideGrid = function(point) {
+
 	// Check if point is on both positive axis
 	if(pointIsPositive(point)) {
 
 		// The point is inside the grid upper limit?
-		if( obstacle.x <= options.size.x ||
-			obstacle.y <= options.size.y) {
+		if( point.x < options.size[0] &&
+			point.y < options.size[1]) {
 			return true
 		} else {
 			return false
@@ -72,12 +75,12 @@ handleObstacleButton = function() {
 	if(canEdit()) {
 		var obstacle = {
 			from: {
-				x: document.getElementById('obstacle-x-from').value,
-				y: document.getElementById('obstacle-y-from').value
+				x: parseInt(document.getElementById('obstacle-x-from').value, 10),
+				y: parseInt(document.getElementById('obstacle-y-from').value, 10)
 			},
 			to: {
-				x: document.getElementById('obstacle-x-to').value,
-				y: document.getElementById('obstacle-y-to').value
+				x: parseInt(document.getElementById('obstacle-x-to').value, 10),
+				y: parseInt(document.getElementById('obstacle-y-to').value, 10)
 			}
 		};
 
@@ -91,11 +94,14 @@ handleObstacleButton = function() {
 				});
 			} else {
 				// Add obstacle to the options
-				options.obstacles.push(obstacle);
+				for(var i = obstacle.from.x; i <= obstacle.to.x; i++) {
+					for(var j = obstacle.from.y; j <= obstacle.to.y; j++) {
+						options.obstacles[j][i] = 1;
+					}	
+				}
 
-				// Update the UI grid
-
-
+				resetGrid();
+				
 				// Notify that the obstacle was created
 				new PNotify({
 				    title: 'New obstacle',
@@ -105,6 +111,17 @@ handleObstacleButton = function() {
 			}	
 		});
 	}
+};
+
+handleRemoveObstaclesButton = function() {
+	var obstacles = options.obstacles;
+	
+	for(var k = 0; k < obstacles.length; k++) {
+		for(var l = 0; l < obstacles[k].length; l++) {
+			obstacles[k][l] = 0;
+		}
+	}
+	resetGrid();
 };
 
 /**
@@ -120,7 +137,8 @@ handleRunButton = function(event) {
 	});
 
 	resetGrid();
-
+	status = 'running';
+	state = null;
 	child = process.fork('astar/astar.js');
 	
 	child.on('message', function(m) {
@@ -137,8 +155,29 @@ handleRunButton = function(event) {
 			$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('visited');
 	  	} else if(m.msg === 'path') {
 	  		$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('path');
+	  	} else if(m.msg === 'callback') {
+			if(m.cb.error) {
+				new PNotify({
+				    title: 'Hmmm...',
+				    text: m.cb.msg,
+				    type: 'error'
+				});
+			} else {
+				new PNotify({
+				    title: 'Solver completed',
+				    text: 'A path was found, and the solver is finished. It took: ' + m.cb.data.time + ' ms. ' + (options.delay ? '(included delays for simulation)' : ''),
+				    type: 'success'
+				});
+			}
+			status = 'idle';
+			document.getElementById('result-time').innerHTML = 	'The search took: ' + m.cb.data.time + ' ms. </br>' +
+																'Nodes expanded: ' + m.cb.data.expanded;
 	  	}
 	});
+
+	options.delay = $('#delay-checkbox').is(':checked') ? 200000 : 0;
+	options.diagonal = $('#diagonal-checkbox').is(':checked');
+	options.map = true;
 
 	child.send({
 		msg: 'start',
@@ -168,9 +207,12 @@ handleSetSizeButton = function() {
 			} else {
 				// Update the size in the options
 				options.size = [size.x, size.y];
-				options.start = null;
-				options.end = null;
-				options.neighbors = [];
+				options.start = [0, 0];
+				options.end = [size.x - 1, size.y - 1];
+				options.obstacles = [];
+
+				resetObstacles();
+
 				// Update the UI grid
 				resetGrid();
 
@@ -189,10 +231,27 @@ handleSetSizeButton = function() {
 
 onload = function() {
 	
+	// set up the file loader
+    chooser = document.querySelector('#fileDialog');
+    chooser.addEventListener("change", function(evt) {
+    	if(this.value) {
+    		parseAstarInput(readFile(this.value));	
+    	}
+    }, false);
+
+	// get all GUI elements
+	var openFileButton = document.getElementById('open-file-btn');
+
+	// attach listeners to buttons
+	openFileButton.addEventListener("click", function(event) {
+		event.preventDefault();
+		chooser.click();
+	});
 	// Get all buttons
 	newObstacleButton = document.getElementById('add-obstacle');
 	runButton = document.getElementById('run');
 	resetButton = document.getElementById('reset');
+	removeObstaclesButton = document.getElementById('remove-obstacles');
 	setSizeButton = document.getElementById('set-size');
 
 	setStartButton = document.getElementById('set-start');
@@ -204,6 +263,7 @@ onload = function() {
 	runButton.addEventListener('click', handleRunButton);
 	reset.addEventListener('click', resetGrid);
 	setSizeButton.addEventListener('click', handleSetSizeButton);
+	removeObstaclesButton.addEventListener('click', handleRemoveObstaclesButton);
 
 	setStartButton.addEventListener('click', function(event) {
 		event.preventDefault();
@@ -271,23 +331,24 @@ resetGrid = function() {
 	}
 
 	// Color the cells which is occupied by an obstacle.
-	var obstacles = options.obstacles;
+	var obstacles = options.obstacles || [];
 
-	if(obstacles.length) {
-		for(var k = 0; k < obstacles.length; k++) {
-			var cell = $('#' + obstacles[k][0] + '-' + obstacles[k][1]);
-			cell.toggleClass('obstacle');
+	for(var k = 0; k < obstacles.length; k++) {
+		for(var l = 0; l < obstacles[k].length; l++) {
+			if(obstacles[k][l]) {
+				$('#' + k + '-' + l).addClass('obstacle');
+			} else {
+				$('#' + k + '-' + l).removeClass('obstacle');
+			}
 		}
 	}
-
 
 	// set click listeners on each cell.
 	$('div.square').on('click', function() {
 		var el = $(this);
 		var xy = el.attr('id').split('-');
-		var point = [xy[0], xy[1]];
-		console.log("clickedyclick")
-		
+		var point = [parseInt(xy[0], 10), parseInt(xy[1], 10)];
+
 		if(state === 'setStart') {
 			$('.startpoint').removeClass('startpoint');
 			el.addClass('startpoint');
@@ -300,15 +361,11 @@ resetGrid = function() {
 			options.end = point;
 		} else if(state === 'drawObstacles') {
 			if(el.hasClass('obstacle')) {
-				for(var i = options.obstacles.length - 1; i >= 0; i--) {
-				    if(parseInt(options.obstacles[i][0],10) === parseInt(point[0],10) && parseInt(options.obstacles[i][1],10) === parseInt(point[1],10)) {
-				       options.obstacles.splice(i, 1);
-				    }
-				}
+				obstacles[point[0]][point[1]] = 0;
 				el.removeClass('obstacle');
 			} else {
 				el.addClass('obstacle');
-				options.obstacles.push(point);
+				obstacles[point[0]][point[1]] = 1;
 			}
 		}
 	});
@@ -321,10 +378,10 @@ resetGrid = function() {
  */
 validateObstacle = function(obstacle, cb) {
 
-	if( !obstacle.from.x ||
-		!obstacle.from.y ||
-		!obstacle.to.x ||
-		!obstacle.to.y ) {
+	if( !(obstacle.from.x >= 0)||
+		!(obstacle.from.y >= 0)||
+		!(obstacle.to.x >= 0)||
+		!(obstacle.to.y >= 0)) {
 		cb(true, {
 			title: 'Invalid obstacle',
 			text: 'Necessary fields are not filled in yet.' 
@@ -332,10 +389,10 @@ validateObstacle = function(obstacle, cb) {
 		return;
 	}
 
-	if( !parseInt(obstacle.from.x, 10) ||
-		!parseInt(obstacle.from.y, 10) ||
-		!parseInt(obstacle.to.x, 10) ||
-		!parseInt(obstacle.to.y, 10)) {
+	if( parseInt(obstacle.from.x, 10) === 'NaN' ||
+		parseInt(obstacle.from.y, 10) === 'NaN' ||
+		parseInt(obstacle.to.x, 10) === 'NaN' ||
+		parseInt(obstacle.to.y, 10) === 'NaN') {
 		cb(true, {
 			title: 'Invalid obstacle',
 			text: 'Some of the values is non-integers.' 
@@ -354,6 +411,62 @@ validateObstacle = function(obstacle, cb) {
 	}
 
 	cb(false, null);
+};
+
+// Read a file at path
+readFile = function(path) {
+	return fs.readFileSync(path, "utf8");
+}
+
+trimToInt = function(str) {
+	return parseInt(str.trim(), 10);
+};
+
+// Parses the input from file and sets the new puzzle
+parseAstarInput = function(buffer) {
+	// get each point as a new line
+	buffer = buffer.replace(/\(|\n/g, "");
+	var lines = buffer.split(')');
+
+
+	var size = lines[0].split(',');
+
+	options.size = [trimToInt(size[0]), trimToInt(size[1])];
+
+	var startPoint = lines[1].split(',');
+
+	options.start = [trimToInt(startPoint[1]), trimToInt(startPoint[0])];
+
+	var endPoint = lines[2].split(',');
+
+	options.end = [trimToInt(endPoint[1]), trimToInt(endPoint[0])];
+
+	options.obstacles = [];
+	resetObstacles();
+
+	for (var i = 3; i < lines.length; i++) {
+		if(lines[i].trim().length > 1) {
+			var vars = lines[i].split(',');
+
+			
+			if (vars.length == 4) {
+				var x = trimToInt(vars[0]);
+				var y = trimToInt(vars[1]);
+				var width = trimToInt(vars[2]);
+				var height = trimToInt(vars[3]);
+
+				for(var k = x; k < x + width; k++) {
+					for(var l = y; l < y + height; l++) {
+						console.log(k)
+						console.log(l)
+						options.obstacles[l][k] = 1;
+					}	
+				}
+			}
+		}
+	}
+
+	resetGrid();
 };
 
 /**
@@ -422,12 +535,22 @@ createInitialOptions = function() {
 	options = {
 		size: [20, 20],
 		start: [0, 0],
-		end: [12, 15],
+		end: [19, 19],
 		diagonal: false,
-		obstacles: [
-			[8, 6],
-			[9, 7],
-			[10, 6]
-		]
+		obstacles: []
 	};
+
+	resetObstacles();
+};
+
+resetObstacles = function() {
+	var obstacles = options.obstacles || [];
+
+	for(var k = 0; k < options.size[0]; k++) {
+		obstacles.push([]);
+		
+		for(var l = 0; l < options.size[1]; l++) {
+			obstacles[k].push(0);
+		}
+	}
 };

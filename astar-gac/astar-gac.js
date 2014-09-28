@@ -4,15 +4,36 @@
 //
 //
 //
+var Dict = require('dict');
+var Queue = require('adt-queue');
+var _ = require('underscore');
+var options;
+
+var TDA;
+var notTDA;
+
+var domainOf;
+var domains;
+
+var variables;
+var constraints;
 
 /**
  *
  */
-astarGAC = function(options, cb) {
+astarGAC = function(opts, cb) {
 
 	// -- Used variables -------------------------------------------------------
+	options = opts;
+	
+	TDA = new Queue();
+	notTDA = new Dict();
+	
+	domainOf = options.domainOf;
+	domains = {};
 
-	var queue = options.init(options.data);
+	variables = _.isFunction(options.variables) && options.variables() || options.variables;
+	constraints = _.isFunction(options.constraints) && options.constraints() || options.constraints;
 
 	// -- Validate options -----------------------------------------------------
 
@@ -29,28 +50,72 @@ astarGAC = function(options, cb) {
 	// -- Initialization -------------------------------------------------------
 	// data: createFunction(["a", "c"], "a == 2 * c")
 
-	// -- Domain-filtering loop ------------------------------------------------
-
-	while(!queue.isEmpty()) {
-		var el = queue.dequeue();
-
-		console.log(el);
+	// For each variable get the domain
+	for(var i = 0, variable = variables[i]; i < variables.length; i++) {
+		domains[variable] = domainOf(variable);
 	}
 
-	// -- Rerun ----------------------------------------------------------------
+	//Add all variable & constraints pairs to queue
+	for(var i = 0; i < variables.length; i++) {
+		for(var j = 0; j < constraints.length; j++) {
+			// TODO: generalize this process
+			for (var v in constraints[j]) {
+				if(variables[i].index == constraints[j][v]) {
+					var n = {
+						variable: variables[i].index,
+						constraint: j
+					};
+					TDA.enqueue(n);
+				}	
+			}
+		}
+	}
 
+	// -- Domain-filtering loop ------------------------------------------------
+	while(!TDA.isEmpty()) {
+
+		// pop a variable and constraint pair
+		var el = TDA.dequeue();
+
+		// store to keep track of processed nodes.
+		notTDA.set(generateHash(el), el);
+
+		if(reviseStar(el)) {
+			if(domains[el.variable].length == 0) {
+				cb(true, {
+					error: "No solution found."
+				});
+
+				return false;
+			}
+
+		}
+	}
+	
+	// -- Rerun ----------------------------------------------------------------
+	//GAC();
 
 	// -- Termination ----------------------------------------------------------
 
 	//var res = createFunction(["a", "c"], "a == 2 * c");
 
 
-	cb(true, {
-		error: "No solution found."
-	});
-
-	return;
+	return true;
 };
+
+
+reduceDomains = function(variables, domainOf, constraints) {
+	
+	
+
+
+}
+
+reviseStar = function(variable, constraint) {
+	var revised = false;
+
+	return revised;
+}
 
 
 createFunction = function(variableNames, expression) {
@@ -64,3 +129,7 @@ createFunction = function(variableNames, expression) {
 
 	return new Function(funcString)();
 }
+
+generateHash = function(o) {
+	return o.toString();
+};
