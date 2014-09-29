@@ -5,7 +5,10 @@
 //
 //
 
+var hash = require('object-hash');
 var Heap = require('heap');
+var Queue = require('adt-queue');
+var Stack = require('stack-adt');
 var Set = require('Set');
 var Dict = require('dict');
 var sleep = require('sleep');
@@ -13,6 +16,8 @@ var sleep = require('sleep');
 var _ = require('underscore');
 
 var options;
+var type;
+var nodeMap;
 
 var expanded = {
 	astar: 0,
@@ -157,9 +162,16 @@ bestFirstSearch = function(options, cb) {
 
 	// copies over the needed functions from the options object
 	h = options.h, d = options.d, n = options.n, isEnd = options.isEnd;
+	options.type = type;
 
-	// creates open and closed "lists"
-	open = new Heap(heapEvaluator);
+	if(options.type === 'dfs') {
+		open = new Stack();
+	} else if(options.type === 'bfs') {
+		open = new Queue();
+	} else {
+		open = new Heap(heapEvaluator);
+	}
+
 	closed = new Set();
 	successorList = Dict();
 
@@ -170,26 +182,56 @@ bestFirstSearch = function(options, cb) {
 		g: 0
 	};
 
+	// Set startnode as the best node 
 	bestNode = startNode;
+
 	// initially sets the estimate distance
 	startNode.f = startNode.g + startNode.h;
 
-	// pushes the start node onto the heap
-	open.push(startNode);
+	// Pushes nodes onto the agenda
+	function push(node) {
+		if(options.type === 'bfs') {
+			open.enqueue(node);
+		} else {
+			open.push(node);
+		}
+	};
+
+	// Checks whether the agenda is empty
+	function isEmpty() {
+		if(options.type === 'bfs' || options.type === 'dfs') {
+			return open.isEmpty();
+		} else {
+			return open.empty();
+		}
+	};
+
+	// Pops an element off the agenda
+	function pop() {
+		if(options.type === 'bfs') {
+			return open.dequeue();
+		} else {
+			return open.pop();
+		}
+	};
+
+	// pushes the start node onto the agenda
+	push(startNode);
+
 	successorList.set(generateHash(startNode.content), startNode);
 
 	// -- Do the loop ----------------------------------------------------------
 	startTime = new Date();
 
 	// As long as it has nodes in the open list, process the list
-	while(open.size()) {
+	while(!isEmpty()) {
 		
 		if(options.delay) {
 			sleep.usleep(options.delay);
 		}
 
 		// pop a node from the top of the heap
-		var currentNode = open.pop();
+		var currentNode = pop();
 		successorList.delete(generateHash(currentNode.content));
 		// Mark 2d cell as the processing node - program specific code
 		
@@ -203,10 +245,12 @@ bestFirstSearch = function(options, cb) {
 
 		// is the current node an acceptable goal?
 		if(isEnd(currentNode.content)) {
+			console.log(currentNode.content)
 			process.send({
 				msg: 'callback',
 				cb: {
 					error: false,
+					type: options.type,
 					data: {
 						path: generatePath(currentNode),
 						cost: currentNode.f,
@@ -231,11 +275,12 @@ bestFirstSearch = function(options, cb) {
 		if (successors) {		
 			// For all successors 
 			for(var i = 0, successorData; successorData = successors[i]; i++) {
+
 				if(closed.contains(generateHash(successorData))) {
 					continue;
 				}
+
 				// Tell about the expanding of node
-				expanded.astar++;
 				process.send({
 					msg: 'expanding',
 					node: successorData
@@ -243,12 +288,12 @@ bestFirstSearch = function(options, cb) {
 				
 				var successor = successorList.get(generateHash(successorData));
 				var update = false;
+
 				if(typeof successor === "undefined") {
 					successor = {
 						content: successorData
 					};
 
-					//attachAndEval(successor, currentNode, d, h);
 					successorList.set(generateHash(successor.content), successor);
 					
 				} else {
@@ -256,11 +301,6 @@ bestFirstSearch = function(options, cb) {
 					if (successor.g < currentNode.g + d(currentNode.content, successorData)) {
 						continue;
 					}
-					 //attachAndEval(successor, currentNode, d, h);
-
-					// if(closed.contains(generateHash(successorData))) {
-
-					// }
 
 					update = true;
 				}
@@ -276,17 +316,22 @@ bestFirstSearch = function(options, cb) {
 				successor.parent = currentNode;
 
 				if(update) {
-					open.heapify();
+					open.heapify && open.heapify();
 				} else {
-					open.push(successor);
+					push(successor);
 				}
 			}
 		}
 
+		expanded.astar++;
+
 		// Changes the cell to be visited
 		process.send({
 			msg: 'visited',
-			node: currentNode
+			node: currentNode,
+			data: {
+				expanded: expanded.astar
+			}
 		});
 	}
 
@@ -295,6 +340,7 @@ bestFirstSearch = function(options, cb) {
 		cb: {
 			error: true,
 			msg: "No solution found",
+			type: options.type,
 			data: {
 				path: generatePath(bestNode),
 				cost: bestNode.f,
@@ -307,40 +353,23 @@ bestFirstSearch = function(options, cb) {
 	return;
 };
 
-attachAndEval = function(successor, parent, d, h) {
-	successor.g = parent.g + d(parent, successor);
-	successor.f = successor.g + h(successor);
-};
-
-propagatePathImprovements = function(node) {
-
-};
-
+/**
+ * Recursively generates the path from leaf to root
+ */
 generatePath = function(node) {
-if (node.parent !== undefined) {
-    var pathSoFar = generatePath(node.parent);
-    pathSoFar.push(node.content);
-    process.send({
+	process.send({
 		msg: 'path',
 		node: node
 	});
-    return pathSoFar;
-  } else {
-  	process.send({
-		msg: 'path',
-		node: node
-	});
-    // this is the starting node
-    return [node.content];
-  }
-};
 
-dephtFirstSearch = function(options, cb) {
+	if (node.parent !== undefined) {
+		var pathSoFar = generatePath(node.parent);
+		pathSoFar.push(node.content);
 
-};
-
-breadthFirstSearch = function(options, cb) {
-
+		return pathSoFar;
+	} else {
+		return [node.content];
+	}
 };
 
 /**
@@ -360,8 +389,11 @@ validateOptions = function(options, cb) {
 	}
 };
 
+/**
+ * Hash function for dictionary
+ */
 generateHash = function(o) {
-	return o.toString();
+	return options.type === 'astar-gac' ? hash(o) : o.toString();
 };
 
 /**
@@ -371,18 +403,24 @@ heapEvaluator = function(x, y) {
 	return x.f - y.f;
 };
 
+/**
+ * Returns the Euclidean distance from node A to node B
+ */
 var euclideanDist = function(a, b) {
 	if (a.length && b.length) {
 
 		var dx = b[0] - a[0];
 		var dy = b[1] - a[1];
 
-		return Math.sqrt(dx * dx + dy * dy);
+		return Math.sqrt((dx * dx) + (dy * dy));
 	}
 
-	//return 0;
+	return 0;
 };
 
+/**
+ * Returns the Manhattan distance from node A to node B
+ */
 var manhattanDist = function(a, b) {
 	if (a.length && b.length) {
 
@@ -395,59 +433,206 @@ var manhattanDist = function(a, b) {
 	return 0;
 };
 
-var neighbors = function(xy) {
-  var x = xy[0], y = xy[1];
+/**
+ * Returns the neighbors to a given node
+ */
+var neighborsFunc = function(node) {
+  var x = node[0];
+  var y = node[1];
+	
+	if(options.diagonal) {
+		// Diagonal movement
+		return [
+			[x - 1, y + 1],
+			[x + 0, y - 1],
+			[x - 1, y - 1],
+			[x - 1, y + 0],
 
-  if(options.diagonal) {
-	  return [
-	    [x - 1, y - 1],
-	    [x - 1, y + 0],
-	    [x - 1, y + 1],
-	    [x + 0, y - 1],
+			[x + 1, y + 0],
+			[x + 1, y + 1],
+			[x + 0, y + 1],
+			[x + 1, y - 1],
+		];
+	} else {
+		// Strict movement 
+		return [
+			[x - 1, y + 0],
+			[x + 0, y - 1],
 
-	    [x + 0, y + 1],
-	    [x + 1, y - 1],
-	    [x + 1, y + 0],
-	    [x + 1, y + 1],
-	  ];
-  } else {
-  	return [
-	    [x - 1, y + 0],
-	    [x + 0, y - 1],
-
-	    [x + 0, y + 1],
-	    [x + 1, y + 0],
-	];
-  }
+			[x + 0, y + 1],
+			[x + 1, y + 0],
+		];
+	}
 };
 
+var neighborColor = function(node) {
+	var neighbors = [];
+	
+	// create a new node by looping over all variables and pick a value from the domain,
+	// Then exclude the value from the neigbors domains
+	for (var i = 0; i < node.variables.length; i++) {
+		var vert = node.variables[i];
+		
+		for (var j = 0; j < node.domains[vert].length; j++) {
+
+			var val = node.domains[vert][j];
+			var newNode = clone(node);
+			newNode.domains[vert] = clone([val]);
+			
+			var connectedNodes = nodeMap[vert];
+
+			var valid = true;
+			// Remove val from neighbor vertices domains.
+			for (var k = 0, n = connectedNodes[k]; k < connectedNodes.length; k++) {
+				var index = newNode.domains[connectedNodes[k]].indexOf(val);
+				if (index > -1) {
+				    newNode.domains[connectedNodes[k]].splice(index, 1);
+				}
+
+				if(newNode.domains[connectedNodes[k]].length < 1) {
+					valid = false;
+				}
+			}
+			if(valid) {
+				neighbors.push(newNode);
+			}
+		}
+	}
+	return neighbors;
+};
+
+clone = function(obj) {
+    var copy;
+
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+        copy = new Date();
+        copy.setTime(obj.getTime());
+        return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+        copy = [];
+        for (var i = 0, len = obj.length; i < len; i++) {
+            copy[i] = clone(obj[i]);
+        }
+        return copy;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        copy = {};
+        for (var attr in obj) {
+            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+        }
+        return copy;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
+
+/**
+ * Handles messages from GUI process
+ */
 process.on('message', function(m) {
 	if(m.msg === 'start' && m.options) {
+		type = m.options.type;
 		options = m.options;
 
-		function neighborsMap(xy) {
-			return neighbors(xy).filter(function(xy) {
+		// A modified neighbor function
+		function neighborsMap(n) {
+			return neighborsFunc(n).filter(function(node) {
 				var obstacles = m.options.obstacles;
 
-				if(xy[0] >= 0 && xy[0] < obstacles[0].length && xy[1] >= 0 && xy[1] < obstacles.length) {
-					return m.options.obstacles[xy[0]][xy[1]] !== 1;
+				// Filter out the outside of the grid and the obstacles
+				if(node[0] >= 0  && node[1] >= 0 && node[0] < m.options.size[0]  && node[1] < m.options.size[1]) {
+					if(node[1] < obstacles.length && node[0] < obstacles[0].length) {
+						return m.options.obstacles[node[0]][node[1]] !== 1;
+					} else {
+						return true;
+					}
 				} else {
 					return false;
 				}
 			});
 	    }
-		
-		bestFirstSearch({
-			delay: m.options.delay,
-			startNode: options.start,
-			isEnd: function(node) {
-				return node[0] === options.end[0] && node[1] === options.end[1];
-			},
-			h: function(node) {
-				return options.diagonal ? euclideanDist(node, options.end) : manhattanDist(node, options.end);
-			},
-			d: options.diagonal ? euclideanDist : manhattanDist,
-			n: m.options.map ? neighborsMap : neighbors
-		});
+
+	    // If Astar was requested include heuristics
+	    if(options.type === 'astar') {
+	    	bestFirstSearch({
+				delay: m.options.delay,
+				startNode: options.start,
+				isEnd: function(node) {
+					return node[0] === options.end[0] && node[1] === options.end[1];
+				},
+				h: function(node) {
+					return options.diagonal ? euclideanDist(node, options.end) : manhattanDist(node, options.end);
+				},
+				d: options.diagonal ? euclideanDist : manhattanDist,
+				n: m.options.map ? neighborsMap : neighborsFunc
+			});
+
+		// Else do a heuristics function that always returns 1
+	    } else if(options.type === 'astar-gac') {
+	    	nodeMap = options.nodeMap;
+	    	bestFirstSearch({
+				delay: options.delay,
+				startNode: options.start,
+				isEnd: function(node) {
+					var varCount = 0;
+
+					for (var i = 0; i < node.variables.length; i++) {
+						var vert = node.variables[i];
+						varCount = varCount + node.domains[vert].length;
+					}
+
+					if (varCount == node.variables.length) {
+						for (var s = 0; s < node.variables.length; s++) {
+							var edges = nodeMap[node.variables[s]];
+
+							for (var t = 0; t < edges.length; t++) {
+								if(node.domains[node.variables[s]][0] === node.domains[edges[t]][0]) {
+									return false;
+								}
+							}
+						}
+						return true;
+					}
+				},
+				// Less domain variables => closer to goal
+				// Stupid but it solves the puzzles faster.
+				h: function(node) {
+					var varCount = 0;
+
+					for (var i = 0; i < node.variables.length; i++) {
+						var vert = node.variables[i];
+						varCount = varCount + node.domains[vert].length;
+					}
+
+					return varCount;
+				},
+				d: function(a, b) {
+					return true;
+				},
+				n: neighborColor
+			});
+	    } else {
+	    	bestFirstSearch({
+				delay: m.options.delay,
+				startNode: options.start,
+				isEnd: function(node) {
+					return node[0] === options.end[0] && node[1] === options.end[1];
+				},
+				h: function(node) {
+					return 1;
+				},
+				d: function() { return 1; },
+				n: m.options.map ? neighborsMap : neighborsFunc
+			});
+	    }
 	}
 });

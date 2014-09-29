@@ -4,6 +4,9 @@
 //
 //
 //
+
+var hash = require('object-hash');
+var process = require('child_process');
 var Dict = require('dict');
 var Queue = require('adt-queue');
 var _ = require('underscore');
@@ -18,10 +21,11 @@ var domains;
 var variables;
 var constraints;
 
+
 /**
  *
  */
-astarGAC = function(opts, cb) {
+GAC = function(opts, cb) {
 
 	// -- Used variables -------------------------------------------------------
 	options = opts;
@@ -34,26 +38,12 @@ astarGAC = function(opts, cb) {
 
 	variables = _.isFunction(options.variables) && options.variables() || options.variables;
 	constraints = _.isFunction(options.constraints) && options.constraints() || options.constraints;
-
-	// -- Validate options -----------------------------------------------------
-
-	// if(!options.n) {
-	// 	cb(true, { error: "The neighbor function is not present in the options. Form: function(node){}" });
-	// 	return;
-	// } else {
-	// 	if(!_.isFunction(options.n)) {
-	// 		cb(true, { error: "options.n is not a function at its accepted form: function(node){}" });
-	// 		return;
-	// 	}
-	// }
+	domains = options.domains;
 
 	// -- Initialization -------------------------------------------------------
 	// data: createFunction(["a", "c"], "a == 2 * c")
 
 	// For each variable get the domain
-	for(var i = 0, variable = variables[i]; i < variables.length; i++) {
-		domains[variable] = domainOf(variable);
-	}
 
 	//Add all variable & constraints pairs to queue
 	for(var i = 0; i < variables.length; i++) {
@@ -80,14 +70,12 @@ astarGAC = function(opts, cb) {
 		// store to keep track of processed nodes.
 		notTDA.set(generateHash(el), el);
 
-		if(reviseStar(el)) {
+		if(revise(el)) {
 			if(domains[el.variable].length == 0) {
-				cb(true, {
-					error: "No solution found."
-				});
-
+				// it's no solution
 				return false;
 			}
+
 
 		}
 	}
@@ -104,15 +92,15 @@ astarGAC = function(opts, cb) {
 };
 
 
-reduceDomains = function(variables, domainOf, constraints) {
-	
-	
+// reduceDomains = function(variables, domainOf, constraints) {
+// }
 
-
-}
-
-reviseStar = function(variable, constraint) {
+revise = function(pair) {
 	var revised = false;
+	var domain = domains[pair.variable];
+	for(var i = 0; i < domain.length; i++) {
+	
+	}
 
 	return revised;
 }
@@ -131,5 +119,5 @@ createFunction = function(variableNames, expression) {
 }
 
 generateHash = function(o) {
-	return o.toString();
+	return hash(o);
 };

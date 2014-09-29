@@ -16,6 +16,21 @@ var delay = false;
 
 // -- Helper functions ---------------------------------------------------------
 
+reset = function() {
+	document.getElementById('result-time-astar').innerHTML = 	'<h3>Astar</h3>' +
+																'<b>The search took:</b></br>' + 
+																'<b>Nodes expanded:</b></br>' +
+																'<b>Length of path:</b>';
+	document.getElementById('result-time-dfs').innerHTML = 	'<h3>Depth-First Search</h3>' +
+																'<b>The search took:</b></br>' +
+																'<b>Nodes expanded:</b></br>' +
+																'<b>Length of path:</b>';
+	document.getElementById('result-time-bfs').innerHTML = 	'<h3>Breadth-First Search</h3>' +
+																'<b>The search took:</b></br>' +
+																'<b>Nodes expanded:</b></br>' +
+																'<b>Length of path:</b>';
+	resetGrid();															
+};
 /**
  * Returns true if the solver is idle and the user can edit the options.
  */
@@ -100,7 +115,7 @@ handleObstacleButton = function() {
 					}	
 				}
 
-				resetGrid();
+				reset();
 				
 				// Notify that the obstacle was created
 				new PNotify({
@@ -121,7 +136,7 @@ handleRemoveObstaclesButton = function() {
 			obstacles[k][l] = 0;
 		}
 	}
-	resetGrid();
+	reset();
 };
 
 /**
@@ -141,6 +156,7 @@ handleRunButton = function(event) {
 	state = null;
 	child = process.fork('astar/astar.js');
 	
+	// If a message from the child process 
 	child.on('message', function(m) {
 
 		// Do DOM manipulations based on feedback from child process
@@ -156,6 +172,8 @@ handleRunButton = function(event) {
 	  	} else if(m.msg === 'path') {
 	  		$('#' + m.node.content[0] + '-' + m.node.content[1]).addClass('path');
 	  	} else if(m.msg === 'callback') {
+			
+			// The solver is either finished or an error occured
 			if(m.cb.error) {
 				new PNotify({
 				    title: 'Hmmm...',
@@ -169,16 +187,45 @@ handleRunButton = function(event) {
 				    type: 'success'
 				});
 			}
+
+			// set status back to idle
 			status = 'idle';
-			document.getElementById('result-time').innerHTML = 	'The search took: ' + m.cb.data.time + ' ms. </br>' +
-																'Nodes expanded: ' + m.cb.data.expanded;
+
+			if(m.cb.type === 'astar') {
+				document.getElementById('result-time-astar').innerHTML = 	'<h3>Astar</h3>' +
+																			'<b>The search took:</b> ' + m.cb.data.time + ' ms</br>' +
+																			'<b>Nodes expanded:</b> ' + m.cb.data.expanded + '</br>' +
+																			'<b>Length of path:</b> ' + m.cb.data.path.length;
+			} else if(m.cb.type === 'dfs') {
+				document.getElementById('result-time-dfs').innerHTML = 	'<h3>Depth-First Search</h3>' +
+																			'<b>The search took:</b> ' + m.cb.data.time + ' ms</br>' +
+																			'<b>Nodes expanded:</b> ' + m.cb.data.expanded + '</br>' +
+																			'<b>Length of path:</b> ' + m.cb.data.path.length;
+			} else if(m.cb.type === 'bfs') {
+				document.getElementById('result-time-bfs').innerHTML = 	'<h3>Breadth-First Search</h3>' +
+																			'<b>The search took:</b> ' + m.cb.data.time + ' ms</br>' +
+																			'<b>Nodes expanded:</b> ' + m.cb.data.expanded + '</br>' +
+																			'<b>Length of path:</b> ' + m.cb.data.path.length;
+			}
+			
 	  	}
 	});
-
+	
+	// Get some initial values
 	options.delay = $('#delay-checkbox').is(':checked') ? 200000 : 0;
 	options.diagonal = $('#diagonal-checkbox').is(':checked');
 	options.map = true;
 
+	// Identify which search method to use
+	var elements = document.getElementsByName('searchOptions');
+
+    for (var i=0, len=elements.length; i<len; ++i) {
+        if (elements[i].checked) {
+        	options.type = elements[i].value;
+        }
+    }
+
+    // Call the proper method in child process
 	child.send({
 		msg: 'start',
 		options: options
@@ -214,7 +261,7 @@ handleSetSizeButton = function() {
 				resetObstacles();
 
 				// Update the UI grid
-				resetGrid();
+				reset();
 
 				// Notify that the size was adjusted
 				new PNotify({
@@ -261,7 +308,7 @@ onload = function() {
 	// attach listeners to each button
 	newObstacleButton.addEventListener('click', handleObstacleButton);
 	runButton.addEventListener('click', handleRunButton);
-	reset.addEventListener('click', resetGrid);
+	resetButton.addEventListener('click', reset);
 	setSizeButton.addEventListener('click', handleSetSizeButton);
 	removeObstaclesButton.addEventListener('click', handleRemoveObstaclesButton);
 
@@ -295,6 +342,7 @@ onload = function() {
 	resetGrid();
 };
 
+
 resetGrid = function() {
 	var size = options.size;
 
@@ -302,7 +350,6 @@ resetGrid = function() {
 
 	// empty the current board
 	board[0].innerHTML = '';
-	document.getElementById('result-time').innerHTML = '';
 
 	// Set CSS width of the board
 	board.css({ 'width': 20 * size[0] });
@@ -457,8 +504,6 @@ parseAstarInput = function(buffer) {
 
 				for(var k = x; k < x + width; k++) {
 					for(var l = y; l < y + height; l++) {
-						console.log(k)
-						console.log(l)
 						options.obstacles[l][k] = 1;
 					}	
 				}
@@ -466,7 +511,7 @@ parseAstarInput = function(buffer) {
 		}
 	}
 
-	resetGrid();
+	reset();
 };
 
 /**

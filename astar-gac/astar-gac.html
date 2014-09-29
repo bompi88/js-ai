@@ -57,10 +57,25 @@
 				<canvas id="diagram">
 					<!-- Graph goes here -->
 				</canvas>
+
+				<div class="col-xs-6" style="text-align:left;margin-top:60px;">
+					<legend>Stats</legend>
+					<p>
+					<b>Visited:</b> <span id="visited"></span>
+					</p>
+				</div>
+				<div class="col-xs-6" style="text-align:left;margin-top:60px;">
+					<legend>Settings</legend>
+					<div class="form-group">
+   						<label for="k">Number of colors</label>
+						<input type="number" name="k" id="k" class="form-control" value="4" min="3" max="6" placeholder="Number of colors">
+					</div>
+				</div>
 				
 				<input style="display:none;" id="fileDialog" type="file" />
 
 				<div class="col-xs-12">
+
 					<button type="button" class="btn btn-default" id="open-file-btn"><span class="glyphicon glyphicon-floppy-open"></span> Open file</button>
 					<button type="button" class="btn btn-primary" id="run-solver-btn">Run! <span class="glyphicon glyphicon-play"></button>
 				</div>

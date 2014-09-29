@@ -65,3 +65,7 @@
 .board-options > div {
 	margin-bottom: 60px;
 }
+
+.controls .col-xs-4 {
+	padding-bottom: 40px;
+}
