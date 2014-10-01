@@ -260,6 +260,7 @@ parseGACInput = function(buffer) {
 
 		edge.from = parseInt(args[0], 10);
 		edge.to = parseInt(args[1], 10);
+		edge.expression = 'from !== to';
 
 		options.constraints.push(edge);
 	}

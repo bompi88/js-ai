@@ -15,6 +15,13 @@ var sleep = require('sleep');
 
 var _ = require('underscore');
 
+// Quick and dirty
+// TODO: export as node module
+var fs = require('fs');
+
+// file is included here:
+eval(fs.readFileSync('astar-gac/astar-gac.js')+'');
+
 var options;
 var type;
 var nodeMap;
@@ -162,6 +169,7 @@ bestFirstSearch = function(options, cb) {
 
 	// copies over the needed functions from the options object
 	h = options.h, d = options.d, n = options.n, isEnd = options.isEnd;
+	gac = options.gac;
 	options.type = type;
 
 	if(options.type === 'dfs') {
@@ -242,6 +250,22 @@ bestFirstSearch = function(options, cb) {
 		
 		// push the processing node to the closed list
 		closed.add(generateHash(currentNode.content));
+		
+		//GAC
+		if(gac) {
+
+			var gacNode = rerun(currentNode);
+			currentNode.content.domains = gacNode.domains;
+			var parentG = currentNode.parent && currentNode.parent.g || 0;
+			var parentContent = currentNode.parent && currentNode.parent.content || currentNode;
+			
+			currentNode.g = parentG + d(parentContent, currentNode.content);
+			currentNode.h = h(currentNode.content);
+			currentNode.f = currentNode.g + currentNode.h;
+			// console.log(gacNode)
+			// console.log(currentNode.content)
+		}
+
 
 		// is the current node an acceptable goal?
 		if(isEnd(currentNode.content)) {
@@ -579,47 +603,58 @@ process.on('message', function(m) {
 		// Else do a heuristics function that always returns 1
 	    } else if(options.type === 'astar-gac') {
 	    	nodeMap = options.nodeMap;
-	    	bestFirstSearch({
-				delay: options.delay,
-				startNode: options.start,
-				isEnd: function(node) {
-					var varCount = 0;
 
-					for (var i = 0; i < node.variables.length; i++) {
-						var vert = node.variables[i];
-						varCount = varCount + node.domains[vert].length;
-					}
+	    	gacInitialize(options);
 
-					if (varCount == node.variables.length) {
-						for (var s = 0; s < node.variables.length; s++) {
-							var edges = nodeMap[node.variables[s]];
+	    	// var s0 = domainFiltering();
 
-							for (var t = 0; t < edges.length; t++) {
-								if(node.domains[node.variables[s]][0] === node.domains[edges[t]][0]) {
-									return false;
+	    	// if(!gotSolution(s0)) {
+		    	bestFirstSearch({
+		    		gac: true,
+					delay: options.delay,
+					startNode: options.start,
+					isEnd: function(node) {
+						//console.log(node.domains)
+						var varCount = 0;
+
+						// 
+						for (var i = 0; i < node.variables.length; i++) {
+							var vert = node.variables[i];
+							varCount = varCount + node.domains[vert].length;
+						}
+
+						//
+						if (varCount == node.variables.length) {
+							for (var s = 0; s < node.variables.length; s++) {
+								var edges = nodeMap[node.variables[s]];
+
+								for (var t = 0; t < edges.length; t++) {
+									if(node.domains[node.variables[s]][0] === node.domains[edges[t]][0]) {
+										return false;
+									}
 								}
 							}
+							return true;
 						}
+					},
+					// Less domain variables => closer to goal
+					// Stupid but it solves the puzzles faster.
+					h: function(node) {
+						var varCount = 0;
+
+						for (var i = 0; i < node.variables.length; i++) {
+							var vert = node.variables[i];
+							varCount = varCount + node.domains[vert].length;
+						}
+
+						return varCount;
+					},
+					d: function(a, b) {
 						return true;
-					}
-				},
-				// Less domain variables => closer to goal
-				// Stupid but it solves the puzzles faster.
-				h: function(node) {
-					var varCount = 0;
-
-					for (var i = 0; i < node.variables.length; i++) {
-						var vert = node.variables[i];
-						varCount = varCount + node.domains[vert].length;
-					}
-
-					return varCount;
-				},
-				d: function(a, b) {
-					return true;
-				},
-				n: neighborColor
-			});
+					},
+					n: neighborColor
+				});
+	    	// }
 	    } else {
 	    	bestFirstSearch({
 				delay: m.options.delay,
@@ -636,3 +671,15 @@ process.on('message', function(m) {
 	    }
 	}
 });
+
+gotSolution = function(node) {
+	if(node === false) {
+		return false;
+	}
+
+	for(var i = 0; i < node.variables.length; i++) {
+		if(node.domains[node.variables[i]].length > 1) {
+			return false;
+		}
+	}
+}
