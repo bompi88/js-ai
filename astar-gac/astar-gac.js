@@ -21,27 +21,10 @@ var constraints;
 var options;
 
 var variableNames = {};
-/**
- *
- */
-// GAC = function(opts, cb) {
 
-// 	// -- Used variables -------------------------------------------------------
+// -- Used variables -------------------------------------------------------
 	
 var allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-	
-	
-// 	// -- Rerun ----------------------------------------------------------------
-// 	//GAC();
-
-// 	// -- Termination ----------------------------------------------------------
-
-// 	//var res = createFunction(["a", "c"], "a == 2 * c");
-
-
-// 	return true;
-// };
 
 var createVarName = function () {
 	var str = "";
@@ -189,7 +172,7 @@ revise = function(pair) {
 				// For every value in the focus variables domain
 				var varValues = [];
 
-				varValues.push(domain[i]);
+				varValues.pusgh(domain[i]);
 				varValues.push(variableDomains[variableDomain][k]);
 				if(pair.constraint.constraint.apply(this, varValues)) {
 					shouldNotKeep = !true;
