@@ -31,6 +31,7 @@ reset = function() {
 																'<b>Length of path:</b>';
 	resetGrid();															
 };
+
 /**
  * Returns true if the solver is idle and the user can edit the options.
  */
@@ -212,7 +213,7 @@ handleRunButton = function(event) {
 	});
 	
 	// Get some initial values
-	options.delay = $('#delay-checkbox').is(':checked') ? 200000 : 0;
+	options.delay = $('#delay-checkbox').is(':checked') ? 100000 : 0;
 	options.diagonal = $('#diagonal-checkbox').is(':checked');
 	options.map = true;
 

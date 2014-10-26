@@ -2,6 +2,9 @@ var process = require('child_process');
 var Queue = require('adt-queue');
 var fs = require("fs");
 
+var Utils = require('./common/helpers.js');
+var Astar = require('./common/astar.js');
+
 var p;
 var chooser;
 var filePath = "./astar-gac/default.txt";
@@ -43,6 +46,7 @@ astarGAC = function(opts, cb) {
 	}
 
 	options.start.variables = _.pluck(options.variables, 'index');
+	options.start.constraints = options.constraints;
 	options.nodeMap = {};
 
 	for (var i = 0; i < options.constraints.length; i++) {
@@ -57,7 +61,7 @@ astarGAC = function(opts, cb) {
 		options.nodeMap[options.constraints[i].to].push(options.constraints[i].from);
 	}
 
-	child = process.fork('astar/astar.js');
+	child = process.fork('astar-gac/astar-gac.js');
 	
 	// Call the proper method in child process
 	child.send({
@@ -72,9 +76,11 @@ astarGAC = function(opts, cb) {
 	  		options.domains = m.node.content && m.node.content.domains;
 	  	} else if(m.msg === 'bailing') {
 	  	} else if(m.msg === 'expanding') {
+	  	} else if(m.msg === 'expanded') {
+	  		//options.domains = m.node.content && m.node.content.domains;
 	  	} else if(m.msg === 'visited') {
 	  		document.getElementById('visited').innerHTML = m.data.expanded;
-	  		options.domains = m.node.content && m.node.content.domains;
+	  		//options.domains = m.node.content && m.node.content.domains;
 	  	} else if(m.msg === 'path') {
 	  		
 	  	} else if(m.msg === 'callback') {
