@@ -4,9 +4,9 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>A* 2D-grid solver</title>
+	<title>Flow problem solver</title>
 
-	<link href="astar-gac.css" rel="stylesheet">
+	<link href="flow.css" rel="stylesheet">
 	<link href="../basic.css" rel="stylesheet">
 
 	<!-- Vendors -->
@@ -36,17 +36,17 @@
 			</div>
 			<div class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
-					<li class="dropdown active">
-						<a href="#" class="dropdown-toggle active" data-toggle="dropdown">Module 1 <span class="caret"></span></a>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Module 1 <span class="caret"></span></a>
 						<ul class="dropdown-menu" role="menu">
 							<li><a href="../astar/astar.html">Astar</a></li>
-							<li class="active"><a href="../astar-gac/astar-gac.html">A*-GAC</a></li>
+							<li><a href="../astar-gac/astar-gac.html">A*-GAC</a></li>
 						</ul>
 					</li>
-					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Module 2 <span class="caret"></span></a>
+					<li class="dropdown active">
+						<a href="#" class="dropdown-toggle active" data-toggle="dropdown">Module 2 <span class="caret"></span></a>
 						<ul class="dropdown-menu" role="menu">
-							<li><a href="../flow/flow.html">Flow</a></li>
+							<li class="active"><a href="../flow/flow.html">Flow</a></li>
 							<li><a href="../nonogram/nonogram.html">Nonogram</a></li>
 						</ul>
 					</li>
@@ -59,24 +59,20 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-xs-12 wrapper">
-				<h1 class="text-center">A*-GAC</h1>
+				<h1 class="text-center">Flow problem</h1>
 
-				<canvas id="diagram">
-					<!-- Graph goes here -->
-				</canvas>
+				<div class="board-container">
+					<div class="board">
+						<!-- Board is generated here -->
+						<h3>Please wait...</h3>
+					</div>
+				</div>
 
-				<div class="col-xs-6" style="text-align:left;margin-top:60px;">
+				<div class="col-xs-12" style="text-align:left;margin-top:60px;">
 					<legend>Stats</legend>
 					<p>
 					<b>Visited:</b> <span id="visited"></span>
 					</p>
-				</div>
-				<div class="col-xs-6" style="text-align:left;margin-top:60px;">
-					<legend>Settings</legend>
-					<div class="form-group">
-   						<label for="k">Number of colors</label>
-						<input type="number" name="k" id="k" class="form-control" value="4" min="3" max="6" placeholder="Number of colors">
-					</div>
 				</div>
 				
 				<input style="display:none;" id="fileDialog" type="file" />
@@ -99,7 +95,7 @@
 	<script src="../vendor/processing/processing.js"></script>
 
 	<!-- Scripts -->
-	<script src="astar-gac-gui.js"></script>
+	<script src="flow-gui.js"></script>
 
 </body>
 </html>

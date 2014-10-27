@@ -116,7 +116,6 @@ module.exports.gacInitialize = function(opts) {
 }
 
 module.exports.domainFiltering = function() {
-	console.log('================================ DOMAIN-FILTERING ================================');
 	var el;
 
 
@@ -151,18 +150,18 @@ module.exports.domainFiltering = function() {
 			}
 		}
 	}
-	//console.log(constraints)
-	console.log('================================ END DOMAIN-FILTERING ================================');
+
 	return {variables: variables, domains: domains, constraints: constraints};
 };
 
 var revise = function(pair) {
-	//console.log('================================ REVISE ================================');
 
 	var revised = false;
 	var domain = domains[pair.variable];
 	var variableDomains = [];
-	
+	// console.log(domains)
+	// console.log(domain)
+	// console.log(pair)
 	// get all other variable domains
 	for(var j = 0; j < pair.constraint.variables.length; j++) {
 		if(variableNames[pair.constraint.variables[j]] !== pair.variable) {
@@ -188,36 +187,31 @@ var revise = function(pair) {
 		}
 
 		if(!retain) {
-			//console.log(domains)
 			// remove from domain
 			domains[pair.variable].splice(domain[i], 1);
 
 			revised = true;
 		}
 	}
-	
-	//console.log('================================ END REVISE ================================');
+
 	return revised;
 };
 
 module.exports.rerun = function(node) {
-	console.log('================================ !!! RERUN !!! ================================');
 
 	variables = node.content.variables;
 	domains = node.content.domains;
-	//console.log(constraints)
-	var variable = node.content.lastVar;
-	//Add all variable & constraints pairs to queue
-	// for (var i = 0; i < variables.length; i++) {
-	// 	var variable = variables[i];
-		if(notTDA[variable]) {
-			var elems = notTDA[variable];
 
-			elems.forEach(function (value, key) {
-				TDA.enqueue(value);
-			});
-		}
-	// }
+	var variable = node.content.lastVar;
+	
+	//Add all variable & constraints pairs to queue with respect to variable guessed
+	if(notTDA[variable]) {
+		var elems = notTDA[variable];
+
+		elems.forEach(function (value, key) {
+			TDA.enqueue(value);
+		});
+	}
 
 	return this.domainFiltering();
 };

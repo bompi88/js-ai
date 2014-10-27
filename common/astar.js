@@ -185,9 +185,6 @@ module.exports.run = function(opts, cb) {
 					msg: 'expanding',
 					node: successorData
 				});
-
-				console.log("================================ EXPANDING ================================");
-
 				
 				var successor = successorList.get(hashFunction(successorData));
 				var update = false;
