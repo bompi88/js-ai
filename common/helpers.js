@@ -41,6 +41,22 @@ module.exports = {
 
 		return 0;
 	},
+		/**
+	 * Returns the Manhattan distance from node A to node B
+	 */
+	manhattanDist2: function(a, b) {
+		if (a.point.length && b.point.length) {
+
+			var dx = Math.abs(b.point[0] - a.point[0]);
+			var dy = Math.abs(b.point[1] - a.point[1]);
+
+			return dx + dy;
+		} else {
+			throw new Error('manhattanDist: A or/and B not a 2D point on the form [x, y]');
+		}
+
+		return 0;
+	},
 
 	/**
 	 * Hash function for dictionary

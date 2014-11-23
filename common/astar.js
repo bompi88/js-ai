@@ -8,7 +8,7 @@
 // -- Modules ------------------------------------------------------------------
 
 
-var Heap = require('heap');
+var Heap = require('js-priority-queue');
 var Queue = require('adt-queue');
 var Stack = require('stack-adt');
 var Set = require('Set');
@@ -38,6 +38,7 @@ var h, d, n, isEnd, hashFunction, startNode, bestNode;
 
 var startTime;
 var kids;
+var paths = [];
 
 /**
  * Implementation of the Astar algorithm. Must be run as a child process.
@@ -92,7 +93,7 @@ module.exports.run = function(opts, cb) {
 	} else if(options.type === 'bfs') {
 		open = new Queue();
 	} else {
-		open = new Heap(heapEvaluator);
+		open = new Heap({ comparator: heapEvaluator });
 	}
 
 	// initialize closed and successor list
@@ -135,7 +136,7 @@ module.exports.run = function(opts, cb) {
 		successorList.delete(hashFunction(currentNode.content));
 		
 		// Tell main process that we are visiting a node
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'visiting',
 			node: currentNode
 		});
@@ -146,7 +147,7 @@ module.exports.run = function(opts, cb) {
 		// is the current node an acceptable goal?
 		if(isEnd(currentNode.content)) {
 			console.log(currentNode.content)
-			process.send({
+			var retVal = {
 				msg: 'callback',
 				cb: {
 					error: false,
@@ -158,20 +159,26 @@ module.exports.run = function(opts, cb) {
 						expanded: expanded.astar
 					}
 				}
-			});
+			};
+
+			_.isFunction(process.send) && process.send(retVal);
 
 			// Changes the cell to be visited
-			process.send({
+			_.isFunction(process.send) && process.send({
 				msg: 'bailing',
 				node: currentNode
 			});
 
-			return;
+			if(options.getAllPaths) {
+				paths.push(generatePath(currentNode));
+			} else {
+				return retVal;
+			}
 		}
 
 		// Current node is not a goal and children nodes must be expanded
 		var successors = n(currentNode.content);
-
+		
 		if (successors) {		
 			// For all successors 
 			for(var i = 0, successorData = null; successorData = successors[i]; i++) {
@@ -181,7 +188,7 @@ module.exports.run = function(opts, cb) {
 				}
 
 				// Tell about the expanding of node
-				process.send({
+				_.isFunction(process.send) && process.send({
 					msg: 'expanding',
 					node: successorData
 				});
@@ -227,7 +234,7 @@ module.exports.run = function(opts, cb) {
 					//  	propagatePathimprovements(successor);
 					// }
 
-					open.heapify && open.heapify();
+					//open.heapify && open.heapify();
 				} else {
 
 					if(gac) {
@@ -236,7 +243,7 @@ module.exports.run = function(opts, cb) {
 						if(gacNode) {
 							successor.content = gacNode;
 							if(gotSolution(successor.content)) {
-								process.send({
+								_.isFunction(process.send) && process.send({
 									msg: 'callback',
 									cb: {
 										error: false,
@@ -251,7 +258,7 @@ module.exports.run = function(opts, cb) {
 								});
 
 								// Changes the cell to be visited
-								process.send({
+								_.isFunction(process.send) && process.send({
 									msg: 'bailing',
 									node: successor
 								});
@@ -263,7 +270,7 @@ module.exports.run = function(opts, cb) {
 							successor.h = h(successor.content);
 							successor.f = successor.g + successor.h;
 							push(successor);
-							open.heapify && open.heapify();
+							//open.heapify && open.heapify();
 						}
 					} else {
 						push(successor);
@@ -271,7 +278,7 @@ module.exports.run = function(opts, cb) {
 					}	
 				}
 				// Tell about the expanding of node
-				process.send({
+				_.isFunction(process.send) && process.send({
 					msg: 'expanded',
 					node: successor.content
 				});
@@ -281,7 +288,7 @@ module.exports.run = function(opts, cb) {
 		expanded.astar++;
 
 		// Changes the cell to be visited
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'visited',
 			node: currentNode,
 			data: {
@@ -289,9 +296,7 @@ module.exports.run = function(opts, cb) {
 			}
 		});
 	}
-
-	// If no solution found, return the best path
-	process.send({
+	var retVal = {
 		msg: 'callback',
 		cb: {
 			error: true,
@@ -304,9 +309,12 @@ module.exports.run = function(opts, cb) {
 				expanded: expanded.astar
 			}
 		}
-	});
+	};
 
-	return;
+	// If no solution found, return the best path
+	_.isFunction(process.send) && process.send(retVal);
+
+	return paths;
 };
 
 gotSolution = function(node) {
@@ -347,8 +355,10 @@ var propagatePathimprovements = function(node) {
 var push = function(node) {
 	if(options.type === 'bfs') {
 		open.enqueue(node);
-	} else {
+	} else if(options.type === 'dfs'){
 		open.push(node);
+	} else {
+		open.queue(node);
 	}
 };
 
@@ -359,7 +369,7 @@ var isEmpty = function() {
 	if(options.type === 'bfs' || options.type === 'dfs') {
 		return open.isEmpty();
 	} else {
-		return open.empty();
+		return open.length == 0;
 	}
 };
 
@@ -369,8 +379,10 @@ var isEmpty = function() {
 var pop = function() {
 	if(options.type === 'bfs') {
 		return open.dequeue();
-	} else {
+	} else if(options.type === 'dfs'){
 		return open.pop();
+	} else {
+		return open.dequeue();
 	}
 };
 
@@ -385,7 +397,7 @@ var heapEvaluator = function(x, y) {
  * Recursively generates the path from leaf to root
  */
 var generatePath = function(node) {
-	process.send({
+	_.isFunction(process.send) && process.send({
 		msg: 'path',
 		node: node
 	});
@@ -407,7 +419,7 @@ var validateOptions = function(opts) {
 	
 	// Check if start node exists
 	if(!(opts.startNode)) {
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'callback',
 			cb: {
 				error: true,
@@ -419,7 +431,7 @@ var validateOptions = function(opts) {
 
 	// Check if end function exists
 	if(!opts.isEnd) {
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'callback',
 			cb: {
 				error: true,
@@ -429,7 +441,7 @@ var validateOptions = function(opts) {
 		return;
 	} else {
 		if(!_.isFunction(opts.isEnd)) {
-			process.send({
+			_.isFunction(process.send) && process.send({
 				msg: 'callback',
 				cb: {
 					error: true,
@@ -442,7 +454,7 @@ var validateOptions = function(opts) {
 
 	// Check whether a heuristic function exists
 	if(!opts.h) {
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'callback',
 			cb: {
 				error: true,
@@ -452,7 +464,7 @@ var validateOptions = function(opts) {
 		return;
 	} else {
 		if(!_.isFunction(opts.h)) {
-			process.send({
+			_.isFunction(process.send) && process.send({
 				msg: 'callback',
 				cb: {
 					error: true,
@@ -465,7 +477,7 @@ var validateOptions = function(opts) {
 
 	// Check if there is a distance function
 	if(!opts.d) {
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'callback',
 			cb: {
 				error: true,
@@ -475,7 +487,7 @@ var validateOptions = function(opts) {
 		return;
 	} else {
 		if(!_.isFunction(opts.d)) {
-			process.send({
+			_.isFunction(process.send) && process.send({
 				msg: 'callback',
 				cb: {
 					error: true,
@@ -488,7 +500,7 @@ var validateOptions = function(opts) {
 
 	// Check if there exists a neighbor function specified
 	if(!opts.n) {
-		process.send({
+		_.isFunction(process.send) && process.send({
 			msg: 'callback',
 			cb: {
 				error: true,
@@ -498,7 +510,7 @@ var validateOptions = function(opts) {
 		return;
 	} else {
 		if(!_.isFunction(opts.n)) {
-			process.send({
+			_.isFunction(process.send) && process.send({
 				msg: 'callback',
 				cb: {
 					error: true,

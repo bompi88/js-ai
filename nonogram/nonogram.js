@@ -7,37 +7,54 @@ var GAC = require('../common/gac.js');
  */
 var neighbors = function(node) {
 	var neighbors = [];
+	var neighborSuccess = 0;
 
-	// for (var i = 0; i < node.variables.length; i++) {
-	// 	var st = {
-	// 		start: [node.variables[i].from[0], node.variables[i].from[1]],
-	// 		end: [node.variables[i].to[0], node.variables[i].to[1]]
-	// 	};
+	// A modified neighbor function
+	function neighborsMap(n) {
+		return neighborsFunc(n).filter(function(node) {
+			var obstacles = m.options.obstacles;
 
-	// 	var retVal = Astar.run({
-	// 		delay: 0,
-	// 		type: 'bfs',
-	// 		getAllPaths: true,
-	// 		startNode: st,
-	// 		hashFunction: Utils.generateHashToString,
-	// 		isEnd: function(node) {
-	// 			return node[0] === st.end[0] && node[1] === st.end[1];
-	// 		},
-	// 		h: function(node) {
-	// 			return Utils.manhattanDist(node, st.end);
-	// 		},
-	// 		d: Utils.manhattanDist,
-	// 		n: neighborsMap
-	// 	});
+			// Filter out the outside of the grid and the obstacles
+			if(node[0] >= 0  && node[1] >= 0 && node[0] < m.options.size[0]  && node[1] < m.options.size[1]) {
+				if(node[1] < obstacles.length && node[0] < obstacles[0].length) {
+					return m.options.obstacles[node[0]][node[1]] == null;
+				} else {
+					return true;
+				}
+			} else {
+				return false;
+			}
+		});
+    }
 
-	// 	if(!retVal.cb.error) {
-	// 		var newNode = {
-	// 			retVal
-	// 		}
+	for (var i = 0; i < node.variables.length; i++) {
+		var st = {
+			start: [node.variables[i].from[0], node.variables[i].from[1]],
+			end: [node.variables[i].to[0], node.variables[i].to[1]]
+		};
 
-	// 		neighborSuccess = neighborSuccess + 1;
-	// 	}
-	// }
+		var retVal = Astar.run({
+			delay: 0,
+			startNode: st,
+			hashFunction: Utils.generateHashToString,
+			isEnd: function(node) {
+				return node[0] === st.end[0] && node[1] === st.end[1];
+			},
+			h: function(node) {
+				return Utils.manhattanDist(node, st.end);
+			},
+			d: Utils.manhattanDist,
+			n: neighborsMap
+		});
+
+		if(!retVal.cb.error) {
+			var newNode = {
+				retVal
+			}
+
+			neighborSuccess = neighborSuccess + 1;
+		}
+	}
 
 	return neighbors;
 };

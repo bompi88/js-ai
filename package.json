@@ -1,9 +1,12 @@
 {
-	"name": "astar",
-	"main": "index.html",
-	"window": {
-		"toolbar": true,
-		"width": 1024,
-		"height": 800
-	}
+  "name": "astar",
+  "main": "index.html",
+  "window": {
+    "toolbar": true,
+    "width": 1024,
+    "height": 800
+  },
+  "dependencies": {
+    "priority-queue-adt": "0.0.0"
+  }
 }

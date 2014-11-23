@@ -7,23 +7,11 @@ var Astar = require('./common/astar.js');
 
 var p;
 var chooser;
-var filePath = "./flow/default.txt";
-
-var pointXMin, pointXMax, pointYMin, pointYMax;
-var boardMap = [];
+var filePath = "./nonogram/default.txt";
 
 // -- Example data -------------------------------------------------------------
 
 var options = {
-	// K: 4,
-	// //creates domain for a given variable
-	// domainOf: function(variable) {
-	// 	var domain = [];
-	// 	for (var i = 0; i < options.K; i++) {
-	// 		domain.push(i);
-	// 	}
-	// 	return domain;
-	// },
 	delay: 0,
 	type: 'astar-gac',
 	size: [6, 6],
@@ -34,7 +22,7 @@ var options = {
 	}
 };
 
-flow = function(opts, cb) {
+nonogram = function(opts, cb) {
 	options = opts;
 	
 	options.start.variables = _.pluck(options.variables, 'index');
@@ -42,7 +30,10 @@ flow = function(opts, cb) {
 	options.nodeMap = {};
 
 	// generate domains
-	generateDomains();
+	for (var i = 0; i < options.variables.length; i++) {
+			options.start.domains[i] = [0, 1];
+
+	}
 
 	for (var i = 0; i < options.constraints.length; i++) {
 		if(!options.nodeMap[options.constraints[i].from]) {
@@ -56,7 +47,7 @@ flow = function(opts, cb) {
 		options.nodeMap[options.constraints[i].to].push(options.constraints[i].from);
 	}
 
-	child = process.fork('flow/flow.js');
+	child = process.fork('nonogram/nonogram.js');
 	
 	// Call the proper method in child process
 	child.send({
@@ -118,7 +109,7 @@ onload = function() {
 	});
 
 	runSolverButton.addEventListener("click", function(event) {
-		flow(options, function(error, result) {
+		nonogram(options, function(error, result) {
 			if(error) {
 				new PNotify({
 			    title: 'Ooooops...',
@@ -151,11 +142,11 @@ resetGrid = function() {
 
 	// Set CSS width of the board
 	board.css({ 'width': 20 * size[0] });
-	console.log(boardMap)
+
 	// append all cells in the grid
 	for(var i = 0; i < size[0]; i++) {
 		for(var j = 0; j < size[1]; j++) {
-			board[0].innerHTML += '<div class="square" id="' + i + '-' + j +'" style="' + getColorCSS(boardMap[i] && boardMap[i][j] && boardMap[i][j].index)+ '"></div>';
+			board[0].innerHTML += '<div class="square" id="' + i + '-' + j +'"></div>';
 		}
 	}
 };
@@ -177,7 +168,7 @@ colors = [
 
 getColorCSS = function(index) {
 
-	if(typeof index !== "undefined" && index != -1) {
+	if(typeof index !== "undefined") {
 			console.log("COLOR:" + index)
 		return "background-color: rgb(" + colors[index].r + "," + colors[index].g + "," + colors[index].b + ");";
 	} else {
@@ -198,68 +189,6 @@ readFile = function(path) {
 	return fs.readFileSync(path, "utf8");
 }
 
-var neighborsFunc = function(node) {
-  	var x = node.point[0];
-  	var y = node.point[1];
-	// Strict movement 
-	return [
-		{ point: [x - 1, y + 0], variable: node.variable, obstacles: node.obstacles },
-		{ point: [x + 0, y - 1], variable: node.variable, obstacles: node.obstacles },
-
-		{ point: [x + 0, y + 1], variable: node.variable, obstacles: node.obstacles },
-		{ point: [x + 1, y + 0], variable: node.variable, obstacles: node.obstacles }
-	];
-};
-
-generateDomains = function() {
-	// A modified neighbor function
-	function neighborsMap(n) {
-		return neighborsFunc(n).filter(function(node) {
-			var obstacles = node.obstacles;
-			
-			// Filter out the outside of the grid and the obstacles
-			if(node.point[0] >= 0 && node.point[1] >= 0 && node.point[0] < options.size[0]  && node.point[1] < options.size[1]) {
-				if(node.point[1] < obstacles.length && node.point[0] < obstacles[0].length) {
-					return ((obstacles[node.point[0]][node.point[1]] && obstacles[node.point[0]][node.point[1]].index == -1) || (obstacles[node.point[0]][node.point[1]] && obstacles[node.point[0]][node.point[1]].index == node.variable));
-				} else {
-					return true;
-				}
-			} else {
-				return false;
-			}
-		});
-    }
-
-	for (var i = 0; i < options.variables.length; i++) {
-		var st = {
-			start: { point: [options.variables[i].from[0], options.variables[i].from[1]], variable: options.variables[i].index, obstacles: boardMap },
-			end: { point: [options.variables[i].to[0], options.variables[i].to[1]], variable: options.variables[i].index, obstacles: boardMap }
-		};
-
-		var retVal = Astar.run({
-			delay: 0,
-			getAllPaths: true,
-			startNode: st.start,
-			hashFunction: Utils.generateHash,
-			isEnd: function(node) {
-				return node.point[0] === st.end.point[0] && node.point[1] === st.end.point[1];
-			},
-			h: function(node) {
-				return Utils.manhattanDist2(node, st.end);
-			},
-			d: Utils.manhattanDist2,
-			n: neighborsFunc
-		});
-		
-		console.log(retVal)
-		if(retVal.length > 0) {
-
-			options.domains[options.variables[i].index] = retVal;
-		}
-	}
-	console.log(options.domains)
-}
-
 // Parses the input from file and sets the new puzzle
 parseFlowInput = function(buffer) {
 	var lines = buffer.split('\n');
@@ -268,20 +197,12 @@ parseFlowInput = function(buffer) {
 	var nv = parseInt(header[0], 10);
 	var ne = parseInt(header[1], 10);
 	
-	options.size = [nv, nv];
-	console.log(ne)
+	options.size = [nv, ne];
+
+
 	// reset the dataset
 	options.variables = [];
 	options.constraints = [];
-
-	boardMap = [];
-
-	for (var t = 0; t < options.size[0]; t++) {
-		boardMap[t] = [];
-		for (var s = 0; s < nv; s++) {
-			boardMap[t][s] = { index: -1};
-		}
-	}
 
 	for(var i = 0; i < ne; i++) {
 
@@ -293,12 +214,19 @@ parseFlowInput = function(buffer) {
 			to: [parseInt(args[3], 10), parseInt(args[4], 10)]
 		};
 
+		if(!boardMap[vert.from[0]]) {
+			boardMap[vert.from[0]] = [];
+		}
+
+		if(!boardMap[vert.to[0]]) {
+			boardMap[vert.to[0]] = [];
+		}
+
 		boardMap[vert.from[0]][vert.from[1]] = { index: vert.index };
 		boardMap[vert.to[0]][vert.to[1]] = { index: vert.index };
 
 		options.variables.push(vert);
 	}
-	console.log(boardMap)
 
 	for(var j = 0; j < ne; j++) {
 		var args = lines[j + 1].split(' ');
@@ -309,14 +237,6 @@ parseFlowInput = function(buffer) {
 		edge.expression = 'from !== to';
 
 		options.constraints.push(edge);
-	}
-
-	for (var i = 0; i < options.variables.length; i++) {
-		options.start.domains[i] = [];
-		for (var j = 0; j < ne; j++) {
-			options.start.domains[i].push(j);
-		}
-		console.log(options.start.domains)
 	}
 
 	resetGrid();

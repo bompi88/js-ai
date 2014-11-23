@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head lang="no">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Flow problem solver</title>
+
+	<link href="nonogram.css" rel="stylesheet">
+	<link href="../basic.css" rel="stylesheet">
+
+	<!-- Vendors -->
+	<link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="../vendor/pnotify/pnotify.custom.min.css" rel="stylesheet">
+
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+	<![endif]-->
+</head>
+<body>
+
+	<!-- Fixed navbar -->
+	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="../index.html">IT3105</a>
+			</div>
+			<div class="navbar-collapse collapse">
+				<ul class="nav navbar-nav">
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Module 1 <span class="caret"></span></a>
+						<ul class="dropdown-menu" role="menu">
+							<li><a href="../astar/astar.html">Astar</a></li>
+							<li><a href="../astar-gac/astar-gac.html">A*-GAC</a></li>
+						</ul>
+					</li>
+					<li class="dropdown active">
+						<a href="#" class="dropdown-toggle active" data-toggle="dropdown">Module 2 <span class="caret"></span></a>
+						<ul class="dropdown-menu" role="menu">
+							<li class="active"><a href="../flow/flow.html">Flow</a></li>
+							<li><a href="../nonogram/nonogram.html">Nonogram</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div><!--/.nav-collapse -->
+		</div>
+	</div>
+
+
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12 wrapper">
+				<h1 class="text-center">Nonogram problem</h1>
+
+				<div class="board-container">
+					<div class="board">
+						<!-- Board is generated here -->
+						<h3>Please wait...</h3>
+					</div>
+				</div>
+
+				<div class="col-xs-12" style="text-align:left;margin-top:60px;">
+					<legend>Stats</legend>
+					<p>
+					<b>Visited:</b> <span id="visited"></span>
+					</p>
+				</div>
+				
+				<input style="display:none;" id="fileDialog" type="file" />
+
+				<div class="col-xs-12">
+
+					<button type="button" class="btn btn-default" id="open-file-btn"><span class="glyphicon glyphicon-floppy-open"></span> Open file</button>
+					<button type="button" class="btn btn-primary" id="run-solver-btn">Run! <span class="glyphicon glyphicon-play"></button>
+				</div>
+			</div>	
+		</div>
+	</div>
+
+	<!-- Vendor scripts -->
+	<script src="../vendor/jquery/jquery-1.11.1.min.js"></script>
+	<script src="../vendor/underscore/underscore.js"></script>
+	<script src="../vendor/backbone/backbone.js"></script>
+	<script src="../vendor/pnotify/pnotify.custom.min.js"></script>
+	<script src="../vendor/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../vendor/processing/processing.js"></script>
+
+	<!-- Scripts -->
+	<script src="nonogram-gui.js"></script>
+
+</body>
+</html>
